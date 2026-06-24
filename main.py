@@ -4,76 +4,76 @@ from huggingface_hub import InferenceClient
 from PIL import Image, ImageDraw, ImageFont
 
 st.set_page_config(page_title="Premium AI Post Generator", layout="centered")
-st.title("⚡ Autonomous Premium Post Generator")
-st.write("Apna content likhein, AI khud reaction image generate karega aur post banayega!")
+st.title("⚡ Autonomous Premium Post Generator v2")
+st.write("Apna content dalein, system automatic text points aur dynamic reaction set karega!")
 
-# User input content
+# 1. Inputs
 user_content = st.text_area("Post Ka Content Yahan Paste Karein:", 
                             placeholder="Example: Amazon just changed its review management system...")
 
-# Hugging Face Token setup (Streamlit secrets se uthayega)
+main_heading = st.text_input("Main Heading (Optional):", "AMAZON CRITICAL UPDATE")
+box1_text = st.text_input("Box 1 Text (Optional - Auto generated if empty):", "")
+box2_text = st.text_input("Box 2 Text (Optional - Auto generated if empty):", "")
+
+# Hugging Face Token setup
 hf_token = os.environ.get("HF_TOKEN")
 
 if st.button("Generate Premium HD Post"):
     if not user_content:
         st.error("Pehle content to likhein jaanib!")
     elif not hf_token:
-        st.error("HF_TOKEN nahi mila! App Settings -> Secrets mein token lagayein.")
+        st.error("HF_TOKEN missing in Secrets!")
     else:
-        with st.spinner("AI aapka content samajh raha hai aur image generate kar raha hai... (Isme 20-30 seconds lag sakte hain)"):
+        with st.spinner("AI Analysis aur Image Generation jari hai..."):
             try:
-                # 1. Hugging Face Client Initialize karna
                 client = InferenceClient(provider="wavespeed", api_key=hf_token)
                 
-                # 2. Automatically prompt banana content ke hisab se
-                ai_prompt = f"An e-commerce professional person looking shocked or giving a heavy reaction, corporate style, high-end commercial photography, cyberpunk lighting, strictly black and neon orange background tone, ultra realistic, studio lighting, matching context: {user_content[:100]}"
+                # Dynamic text handling (Agar user ne khud nahi likha to content se uthaye)
+                final_box1 = box1_text if box1_text else "ALERT DETECTED"
+                final_box2 = box2_text if box2_text else "ACTION REQUIRED"
                 
-                # 3. FLUX Model se image generate karna
-                reaction_img = client.text_to_image(
-                    ai_prompt,
-                    model="black-forest-labs/FLUX.1-dev",
-                )
+                if not box1_text or not box2_text:
+                    # Content ke shuruati lafz utha kar dabba text dynamic banana
+                    words = user_content.split()
+                    if len(words) >= 4:
+                        final_box1 = " ".join(words[:2]).upper()
+                        final_box2 = " ".join(words[2:5]).upper()
+
+                # Tight Prompting for exact thematic look
+                ai_prompt = f"An e-commerce digital strategist professional man, dynamic facial expression matching this context: {user_content[:60]}, high-end commercial tech portrait, cinematic studio lighting, dark charcoal background with sharp neon orange accents, ultra-detailed 8k, photorealistic."
                 
-                # 4. Final Post Layout Design (1080x1080 Instagram/LinkedIn Size)
-                # Canvas banana (Black Background)
+                # FLUX Image generation
+                reaction_img = client.text_to_image(ai_prompt, model="black-forest-labs/FLUX.1-dev")
+                
+                # Canvas Creation
                 canvas = Image.new("RGB", (1080, 1080), "#0d0d0d")
                 draw = ImageDraw.Draw(canvas)
                 
-                # AI ki banayi hui Image ko resize karke right side par set karna
-                reaction_resized = reaction_img.resize((500, 700))
-                canvas.paste(reaction_resized, (530, 250))
+                # Paste Generated Image
+                reaction_resized = reaction_img.resize((520, 720))
+                canvas.paste(reaction_resized, (520, 230))
                 
-                # Top Header Banner (Orange Gradient Block)
-                draw.rectangle([(50, 50), (1030, 150)], fill="#ff6a00")
+                # Header
+                draw.rectangle([(50, 50), (1030, 160)], fill="#ff6a00")
+                draw.text((80, 80), main_heading.upper(), fill="#ffffff", font_size=40)
                 
-                # Header Text
-                draw.text((80, 75), "AMAZON CRITICAL UPDATE", fill="#ffffff", font_size=42)
+                # Dynamic Badges
+                draw.rectangle([(50, 250), (480, 380)], outline="#ff6a00", width=4)
+                draw.text((70, 290), final_box1[:20], fill="#ffffff", font_size=24)
                 
-                # Content points background badges (Orange outline boxes)
-                draw.rectangle([(50, 250), (500, 380)], outline="#ff6a00", width=4)
-                draw.text((70, 280), "SYSTEM CHANGED", fill="#ffffff", font_size=28)
+                draw.rectangle([(50, 420), (480, 550)], outline="#ff6a00", width=4)
+                draw.text((70, 460), final_box2[:20], fill="#ffffff", font_size=24)
                 
-                draw.rectangle([(50, 420), (500, 550)], outline="#ff6a00", width=4)
-                draw.text((70, 450), "ACTION REQUIRED", fill="#ffffff", font_size=28)
+                # Bottom Description
+                clean_text = user_content[:250] + "..." if len(user_content) > 250 else user_content
+                draw.text((50, 780), clean_text, fill="#bbbbbb", font_size=22)
                 
-                # Niche baaki ka bacha hua text draw karna
-                clean_text = user_content[:200] + "..." if len(user_content) > 200 else user_content
-                draw.text((50, 750), clean_text, fill="#aaaaaa", font_size=24)
-                
-                # Output Save karna
+                # Save & Display
                 canvas.save("final_premium_post.png")
+                st.image("final_premium_post.png", caption="Aapki Customized AI Post!")
                 
-                # Screen par dikhana
-                st.image("final_premium_post.png", caption="Aapki AI-Generated Post Ready Hai!")
-                
-                # Download Button
                 with open("final_premium_post.png", "rb") as file:
-                    st.download_button(
-                        label="Download Premium Post",
-                        data=file,
-                        file_name="premium_ai_post.png",
-                        mime="image/png"
-                    )
+                    st.download_button(label="Download Premium Post", data=file, file_name="premium_ai_post.png", mime="image/png")
                     
             except Exception as e:
-                st.error(f"Post banane mein koi rola aaya hai: {e}")
+                st.error(f"Error: {e}")
