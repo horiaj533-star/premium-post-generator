@@ -2,3 +2,4 @@ streamlit
 pillow
 huggingface_hub
 requests
+anthropic
