@@ -1,155 +1,174 @@
 import streamlit as st
 import os
 import requests
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageFilter
 import textwrap
 
-st.set_page_config(page_title="Premium AI Post Generator - MAG Style", layout="centered")
-st.title("⚡ Premium E-Com Post Architect")
-st.write("My Amazon Guy style clean infographic generator!")
+st.set_page_config(page_title="Black & Orange Amazon Post Generator", layout="centered")
+st.title("🔥 Black & Orange Amazon Post Generator")
+st.write("My Amazon Guy style — Black/Orange theme with your photo!")
 
-# Font Download
+# ─── FONT DOWNLOAD ───────────────────────────────────────
 @st.cache_data
 def download_fonts():
     font_dir = "fonts"
     os.makedirs(font_dir, exist_ok=True)
     urls = {
-        "Oswald-Bold.ttf": "https://github.com/google/fonts/raw/main/ofl/oswald/Oswald%5Bwght%5D.ttf",
+        "Oswald-Bold.ttf":    "https://github.com/google/fonts/raw/main/ofl/oswald/Oswald%5Bwght%5D.ttf",
         "Roboto-Regular.ttf": "https://github.com/google/fonts/raw/main/apache/roboto/static/Roboto-Regular.ttf",
-        "Roboto-Bold.ttf": "https://github.com/google/fonts/raw/main/apache/roboto/static/Roboto-Bold.ttf",
+        "Roboto-Bold.ttf":    "https://github.com/google/fonts/raw/main/apache/roboto/static/Roboto-Bold.ttf",
     }
     for name, url in urls.items():
         path = os.path.join(font_dir, name)
         if not os.path.exists(path):
-            r = requests.get(url)
+            r = requests.get(url, timeout=30)
             with open(path, "wb") as f:
                 f.write(r.content)
     return font_dir
 
 font_folder = download_fonts()
 
-# ─── INPUTS ───────────────────────────────────────────────
-main_heading   = st.text_input("Main Heading:", "FBM Sellers Just Got More Protection")
-brand_name     = st.text_input("Brand / Channel Name:", "My Amazon Guy")
+# ─── INPUTS ──────────────────────────────────────────────
+st.sidebar.header("⚙️ Customize Your Post")
 
-st.markdown("**4 Benefit Badges (green chips around the person)**")
-col1, col2 = st.columns(2)
-with col1:
-    badge1 = st.text_input("Badge 1:", "Fewer no-return refunds")
-    badge3 = st.text_input("Badge 3:", "Lower CSBA barrier")
-with col2:
-    badge2 = st.text_input("Badge 2:", "Centralized messages")
-    badge4 = st.text_input("Badge 4:", "Better customer issue data")
+main_heading = st.sidebar.text_input("Main Heading:", "AMAZON CRITICAL UPDATE")
+brand_name   = st.sidebar.text_input("Brand Name:", "Abdullah Gull  |  Amazon Expert")
+website      = st.sidebar.text_input("Website / Handle:", "amazon-expert.com  •  @AbdullahGull")
 
-person_image_path = st.text_input(
-    "Person PNG path (transparent bg preferred):",
-    "Abdullah_Gull_Amazon_Expert.jpg-removebg-preview.png"
+st.sidebar.markdown("---")
+st.sidebar.markdown("**5 Info Badges**")
+badge_inputs = []
+defaults = [
+    ("34 Days Left",    "Deadline: July 27"),
+    ("Title Limit",     "75 chars max"),
+    ("Auto Force-Edit", "Amazon will change"),
+    ("Check NOW",       "Seller Central"),
+    ("Update Titles",   "Before deadline"),
+]
+for i, (dt, ds) in enumerate(defaults, 1):
+    t = st.sidebar.text_input(f"Badge {i} Title:", dt,   key=f"bt{i}")
+    s = st.sidebar.text_input(f"Badge {i} Sub:",   ds,   key=f"bs{i}")
+    badge_inputs.append((t, s))
+
+st.sidebar.markdown("---")
+person_file = st.sidebar.file_uploader(
+    "Upload Your Photo (PNG with transparent or white bg recommended):",
+    type=["png","jpg","jpeg"]
 )
 
-# ─── GENERATE ─────────────────────────────────────────────
-if st.button("Generate MAG-Style Infographic"):
+# ─── GENERATE ────────────────────────────────────────────
+if st.button("🔥 Generate Black & Orange Post"):
 
-    # ── Load fonts ──
+    W, H   = 1080, 1080
+    ORANGE = "#FF6A00"
+    WHITE  = "#FFFFFF"
+    DARK   = "#0e0e0e"
+    GRAY   = "#aaaaaa"
+
+    # Fonts
     try:
-        f_heading  = ImageFont.truetype(os.path.join(font_folder, "Oswald-Bold.ttf"),   88)
-        f_brand    = ImageFont.truetype(os.path.join(font_folder, "Roboto-Bold.ttf"),   34)
-        f_badge    = ImageFont.truetype(os.path.join(font_folder, "Roboto-Bold.ttf"),   32)
-    except Exception:
-        f_heading = f_brand = f_badge = ImageFont.load_default()
+        f_brand = ImageFont.truetype(os.path.join(font_folder,"Roboto-Bold.ttf"),    33)
+        f_head  = ImageFont.truetype(os.path.join(font_folder,"Oswald-Bold.ttf"),    82)
+        f_bl    = ImageFont.truetype(os.path.join(font_folder,"Roboto-Bold.ttf"),    27)
+        f_bs    = ImageFont.truetype(os.path.join(font_folder,"Roboto-Regular.ttf"), 21)
+    except:
+        f_brand = f_head = f_bl = f_bs = ImageFont.load_default()
 
-    W, H = 1080, 1080
+    # Canvas
+    canvas = Image.new("RGB", (W, H), "#080808")
+    draw   = ImageDraw.Draw(canvas)
+    for y in range(H):
+        t = y / H
+        draw.line([(0,y),(W,y)], fill=(int(8+30*t), int(8+5*t), 8))
 
-    # ── Canvas – mint-to-white gradient background ──
-    canvas = Image.new("RGB", (W, H), "#ffffff")
+    # Orange glow
+    glow = Image.new("RGBA",(W,H),(0,0,0,0))
+    gd   = ImageDraw.Draw(glow)
+    for rad in range(300,0,-4):
+        a = int(55*(1-rad/300))
+        gd.ellipse([(W-rad,H-rad),(W+rad,H+rad)],fill=(255,80,0,a))
+    canvas = Image.alpha_composite(canvas.convert("RGBA"),glow).convert("RGB")
     draw   = ImageDraw.Draw(canvas)
 
-    # Mint gradient top half
-    for y in range(H):
-        ratio = y / H
-        r = int(200 + (255 - 200) * ratio)
-        g = int(240 + (255 - 240) * ratio)
-        b = int(230 + (255 - 230) * ratio)
-        draw.line([(0, y), (W, y)], fill=(r, g, b))
+    # Orange border
+    draw.rectangle([(10,10),(W-10,H-10)], outline=ORANGE, width=5)
 
-    # ── Black bottom bar ──
-    draw.rectangle([(0, 980), (W, H)], fill="#111111")
+    # Brand name
+    bw = draw.textlength(brand_name, font=f_brand)
+    bx = (W-bw)//2
+    for i,c in enumerate(["#FF6A00","#FF2200","#FFB300","#FF5500"]):
+        draw.rectangle([(bx-88+i*17,32),(bx-88+i*17+12,62)],fill=c)
+    draw.text((bx,30), brand_name, fill=ORANGE, font=f_brand)
 
-    # ── Brand name (top center) ──
-    brand_w = draw.textlength(brand_name, font=f_brand)
-    # Small colored bars (like MAG logo) before name
-    bar_x = (W - brand_w) // 2 - 40
-    for i, color in enumerate(["#4285F4", "#EA4335", "#FBBC05", "#34A853"]):
-        draw.rectangle([(bar_x + i*10, 42), (bar_x + i*10 + 7, 70)], fill=color)
-    draw.text(((W - brand_w) // 2, 38), brand_name, fill="#111111", font=f_brand)
-
-    # ── Yellow heading background + text ──
-    heading_lines = textwrap.wrap(main_heading, width=18)
-    line_h        = 96
-    total_h       = len(heading_lines) * line_h + 30
-    pad           = 24
-
-    # Draw yellow rectangles (slight offset, stacked like MAG)
-    rect_y = 100
-    for i, line in enumerate(heading_lines):
-        tw = draw.textlength(line, font=f_heading)
-        rx1 = (W - tw) // 2 - pad
-        rx2 = (W + tw) // 2 + pad
-        ry1 = rect_y + i * line_h - 10
-        ry2 = ry1 + line_h + 4
-        draw.rectangle([(rx1, ry1), (rx2, ry2)], fill="#FFD600")
-        draw.text(((W - tw) // 2, rect_y + i * line_h), line, fill="#111111", font=f_heading)
-
-    # ── Person image ──
-    person_y_top = rect_y + total_h + 10
-    if os.path.exists(person_image_path):
-        person = Image.open(person_image_path).convert("RGBA")
-        # Scale to fill lower portion
-        ph = H - person_y_top - 80
-        pw = int(person.width * ph / person.height)
-        person = person.resize((pw, ph), Image.LANCZOS)
-        px = (W - pw) // 2
-        canvas.paste(person, (px, person_y_top), person)
+    # Header bar
+    draw.rectangle([(35,78),(W-35,178)],fill=ORANGE)
+    hw = draw.textlength(main_heading, font=f_head)
+    # If too long, reduce
+    if hw > W - 100:
+        heading_lines = textwrap.wrap(main_heading, width=20)
+        for li, line in enumerate(heading_lines[:2]):
+            lw = draw.textlength(line, font=f_bl)
+            draw.text(((W-lw)//2, 92 + li*44), line, fill=WHITE, font=f_bl)
     else:
-        draw.text((W//2 - 150, H//2), "[ Person image missing ]", fill="#ff0000", font=f_badge)
+        draw.text(((W-hw)//2, 110), main_heading, fill=WHITE, font=f_head)
 
-    # ── Helper: draw a rounded green badge ──
-    def draw_badge(cx, cy, text, anchor="center"):
-        """cx, cy = center of badge"""
-        lines = textwrap.wrap(text, width=14)
-        lh    = 38
-        bw    = 260
-        bh    = len(lines) * lh + 28
-        bx1   = cx - bw // 2
-        by1   = cy - bh // 2
-        bx2   = cx + bw // 2
-        by2   = cy + bh // 2
+    # ── PERSON IMAGE ──
+    PERSON_AREA_LEFT = W // 2 + 30   # person goes in RIGHT half
+    PERSON_TOP       = 185
+    PERSON_BOT       = H - 70
+    PERSON_H         = PERSON_BOT - PERSON_TOP
+    PERSON_W         = W - PERSON_AREA_LEFT - 20
 
-        # Shadow
-        draw.rounded_rectangle([(bx1+4, by1+4), (bx2+4, by2+4)], radius=14, fill=(0,0,0,60))
-        # Green box
-        draw.rounded_rectangle([(bx1, by1), (bx2, by2)], radius=14, fill="#2DB67D")
-        # Checkmark circle
-        ck_x, ck_y = bx1 + 26, (by1 + by2) // 2
-        draw.ellipse([(ck_x-14, ck_y-14), (ck_x+14, ck_y+14)], fill="#1a8a57")
-        draw.text((ck_x-7, ck_y-10), "✓", fill="#ffffff", font=f_badge)
-        # Text
-        txt_x = bx1 + 54
-        for i, ln in enumerate(lines):
-            draw.text((txt_x, by1 + 14 + i * lh), ln, fill="#ffffff", font=f_badge)
+    if person_file:
+        person_src = Image.open(person_file).convert("RGBA")
+        # Scale to fit right-half area
+        scale  = min(PERSON_W / person_src.width, PERSON_H / person_src.height)
+        pw     = int(person_src.width  * scale)
+        ph     = int(person_src.height * scale)
+        person = person_src.resize((pw, ph), Image.LANCZOS)
+        px     = PERSON_AREA_LEFT + (PERSON_W - pw) // 2
+        py     = PERSON_BOT - ph
+        canvas.paste(person, (px, py), person)
+    else:
+        draw.rectangle([(PERSON_AREA_LEFT, PERSON_TOP),(W-20, PERSON_BOT)],
+                       outline=ORANGE, width=2)
+        draw.text((PERSON_AREA_LEFT+20, PERSON_TOP+PERSON_H//2-20),
+                  "Upload your photo →", fill=ORANGE, font=f_bs)
 
-    # Badge positions (around person, like MAG style)
-    mid_y = person_y_top + (H - person_y_top) // 2
-    draw_badge(160,  mid_y - 100, badge1)   # top-left
-    draw_badge(920,  mid_y - 100, badge2)   # top-right
-    draw_badge(W//2, person_y_top + 30,  badge1[:0] or badge1, )  # top-center — skip, MAG uses top-center for 1 badge
-    draw_badge(160,  mid_y + 80,  badge3)   # bottom-left
-    draw_badge(920,  mid_y + 80,  badge4)   # bottom-right
-    # Top-center badge (5th if needed, else first badge goes here)
-    draw_badge(W//2, person_y_top + 50, badge1)
+    draw = ImageDraw.Draw(canvas)
 
-    # ── Save & Display ──
-    out_path = "mag_style_post.png"
-    canvas.save(out_path)
-    st.image(out_path, caption="✅ MAG-Style Infographic Ready!")
-    with open(out_path, "rb") as f:
-        st.download_button("⬇️ Download HD Post", f, file_name="mag_infographic.png", mime="image/png")
+    # ── BADGES (LEFT SIDE) ──
+    def badge(cx, cy, title, sub=""):
+        BW=255; BH=72 if not sub else 100
+        x1,y1=cx-BW//2,cy-BH//2; x2,y2=cx+BW//2,cy+BH//2
+        draw.rounded_rectangle([(x1+4,y1+4),(x2+4,y2+4)],radius=13,fill="#000000")
+        draw.rounded_rectangle([(x1,y1),(x2,y2)],radius=13,fill=DARK)
+        draw.rounded_rectangle([(x1,y1),(x2,y2)],radius=13,outline=ORANGE,width=3)
+        ck_x=x1+28; ck_y=y1+BH//2-(10 if sub else 0)
+        draw.ellipse([(ck_x-15,ck_y-15),(ck_x+15,ck_y+15)],fill=ORANGE)
+        draw.text((ck_x-5,ck_y-11),"✓",fill=WHITE,font=f_bl)
+        draw.text((x1+52,y1+12),title[:20],fill=WHITE,font=f_bl)
+        if sub:
+            draw.text((x1+52,y1+48),sub[:24],fill=GRAY,font=f_bs)
+
+    LX   = 190          # left column center
+    BY   = 210          # starting y for badges
+    BGAP = 158          # gap between badges
+
+    for i, (t, s) in enumerate(badge_inputs):
+        badge(LX, BY + i * BGAP, t, s)
+
+    # Bottom bar
+    draw.rectangle([(0,H-68),(W,H)],fill="#000000")
+    tw2 = draw.textlength(website, font=f_bs)
+    draw.text(((W-tw2)//2, H-48), website, fill=ORANGE, font=f_bs)
+
+    # Save & show
+    out = "black_orange_post.png"
+    canvas.save(out)
+    st.image(out, caption="✅ Your Black & Orange Post is Ready!")
+    with open(out,"rb") as f:
+        st.download_button("⬇️ Download HD Post", f,
+                           file_name="amazon_post.png", mime="image/png")
+
+    st.info("💡 Tip: Upload a transparent-background (PNG cutout) photo of yourself for best results!")
