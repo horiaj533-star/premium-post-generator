@@ -8,14 +8,12 @@ st.set_page_config(page_title="Premium AI Post Generator v3", layout="centered")
 st.title("⚡ Premium E-Com Post Architect")
 st.write("Apna content likhein, system automatic clean modern infographic layout ready karega!")
 
-# Font Download karne ka jugaar (Taakay default fonts wala ganda look khatam ho)
+# Font Download karne ka jugaar
 @st.cache_data
 def download_fonts():
     font_dir = "fonts"
     if not os.path.exists(font_dir):
         os.makedirs(font_dir)
-    
-    # Modern clean fonts download karna
     urls = {
         "Oswald-Bold.ttf": "https://github.com/google/fonts/raw/main/ofl/oswald/Oswald%5Bwght%5D.ttf",
         "Roboto-Regular.ttf": "https://github.com/google/fonts/raw/main/apache/roboto/static/Roboto-Regular.ttf"
@@ -48,7 +46,8 @@ if st.button("Generate Premium HD Post"):
     else:
         with st.spinner("Premium Infographic Layout Design ho raha hai..."):
             try:
-                client = InferenceClient(provider="wavespeed", api_key=hf_token)
+                # API Initialize bina strict wavespeed provider ke
+                client = InferenceClient(api_key=hf_token)
                 
                 # Fonts load karna
                 try:
@@ -71,7 +70,14 @@ if st.button("Generate Premium HD Post"):
                 # AI Background Element Prompt
                 ai_prompt = f"Abstract luxury tech background, premium cyber lighting, charcoal black background with bright neon orange highlights, e-commerce data vectors, high-end studio presentation tone, matching context: {user_content[:60]}"
                 
-                bg_img = client.text_to_image(ai_prompt, model="black-forest-labs/FLUX.1-dev")
+                # --- TOKENS KA ROLA BYPASS KARNE KE LIYE SAFE ALTERNATIVE MODEL ---
+                try:
+                    # Pehle standard free pipeline se image try karte hain
+                    bg_img = client.text_to_image(ai_prompt, model="stabilityai/stable-diffusion-xl-base-1.0")
+                except Exception as e:
+                    # Agar phir bhi issue aaye to fall back to an open-source fast model
+                    bg_img = client.text_to_image(ai_prompt, model="black-forest-labs/FLUX.1-schnell")
+                
                 bg_resized = bg_img.resize((520, 720))
                 
                 # Main 1080x1080 Canvas (Pure Dark Premium Background)
@@ -86,7 +92,6 @@ if st.button("Generate Premium HD Post"):
                 if os.path.exists(image_name):
                     user_face = Image.open(image_name).convert("RGBA")
                     user_face.thumbnail((480, 680))
-                    # Photo overlay
                     canvas.paste(user_face, (540, 260), user_face)
                 else:
                     draw.rectangle([(540, 260), (1000, 800)], outline="#ff6a00", width=2)
@@ -95,22 +100,18 @@ if st.button("Generate Premium HD Post"):
                 # --- MODERN STYLE DESIGN LAYOUT ---
                 # Top Header Box (Rounded Corners like My Amazon Guy style)
                 draw.rounded_rectangle([(50, 50), (1030, 160)], radius=15, fill="#ff6a00")
-                # Centered Header Text
                 draw.text((80, 78), main_heading.upper(), fill="#ffffff", font=font_title)
                 
-                # Dynamic Badges (Rounded Boxes with smooth borders)
-                # Badge 1
+                # Dynamic Badges
                 draw.rounded_rectangle([(50, 250), (490, 370)], radius=12, fill="#141414", outline="#ff6a00", width=3)
                 draw.text((80, 290), final_box1[:22], fill="#ffffff", font=font_badge)
                 
-                # Badge 2
                 draw.rounded_rectangle([(50, 410), (490, 530)], radius=12, fill="#141414", outline="#ff6a00", width=3)
                 draw.text((80, 450), final_box2[:22], fill="#ffffff", font=font_badge)
                 
                 # Bottom Description Paragraph
                 clean_text = user_content[:250] + "..." if len(user_content) > 250 else user_content
                 
-                # Text wrapping helper for descriptions
                 lines = []
                 words_desc = clean_text.split()
                 current_line = ""
